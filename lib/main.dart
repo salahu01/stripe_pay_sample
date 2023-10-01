@@ -3,7 +3,7 @@ import 'package:stripe_pay/view/home.view.dart';
 import 'package:flutter_stripe/flutter_stripe.dart';
 
 void main() {
-  Stripe.publishableKey = 'sk_test_51Nq9HySEvcsd1ZN9rwm28ELRA7yk4G1hpzmmy0njPAJGGKCcL5au3DFhe4D44cEuJUuLvIyZEaxL8JJv1TE2EYmd001SmPSbUI';
+  Stripe.publishableKey = 'pk_test_51Nq9HySEvcsd1ZN9tlnH5TU5DOx5QXED2A8FwbXTbDiiWOyuFVLNloGv2lvbj5MSgVu0k3N9jcWkdLoMceA57twK00rg79SGcr';
   runApp(const MyApp());
 }
 

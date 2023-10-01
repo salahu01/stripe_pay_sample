@@ -14,19 +14,40 @@ class HomeView extends StatefulWidget {
 class _HomeViewState extends State<HomeView> {
   bool isLoading = false;
   String? secret;
+  String? token;
 
-  @override
-  void initState() {
-    fetchSecret();
-    super.initState();
+  Future<void> getToken() async {
+    setState(() => isLoading = true);
+    try {
+      final body = {
+        "email": "swathirandillath0@gmail.com",
+        "password": "12345678",
+      };
+      final res = await Dio().post(
+        'https://fiveapp.dev.fegno.com/api/user/login/',
+        options: Options(
+          contentType: 'application/json',
+        ),
+        data: body,
+      );
+      token = res.data['token'];
+      if (token != null) {
+        await fetchSecret();
+      }
+    } catch (e) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context)
+        ..clearSnackBars()
+        ..showSnackBar(SnackBar(content: Text('$e')));
+      log(e.toString());
+      throw 'error';
+    }
+    setState(() => isLoading = false);
   }
 
   Future<void> fetchSecret() async {
-    setState(() {
-      isLoading = true;
-    });
+    setState(() => isLoading = true);
     try {
-      const token = 'EkdYlFJZjHaJGe1P1Umbi5ksT9ToKmcpL9UzcOMv';
       final body = {
         "modules_ids": [2],
         "total_price": 1000,
@@ -50,12 +71,32 @@ class _HomeViewState extends State<HomeView> {
       log(e.toString());
       throw 'error';
     }
-    setState(() {
-      isLoading = false;
-    });
+    setState(() => isLoading = false);
   }
 
-  Future<void> pay() async {}
+  Future<void> pay() async {
+    try {
+      await Stripe.instance.initPaymentSheet(
+        paymentSheetParameters: SetupPaymentSheetParameters(
+          paymentIntentClientSecret: secret,
+          style: ThemeMode.dark,
+          googlePay: const PaymentSheetGooglePay(
+            merchantCountryCode: 'US',
+            currencyCode: 'US',
+            testEnv: true,
+          ),
+          merchantDisplayName: 'sample',
+        ),
+      );
+      await Stripe.instance.presentPaymentSheet();
+    } catch (e) {
+      // ignore: use_build_context_synchronously
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+      rethrow;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,33 +105,15 @@ class _HomeViewState extends State<HomeView> {
         child: Visibility(
           visible: !isLoading,
           replacement: const CircularProgressIndicator(),
-          child: ElevatedButton(
-            onPressed: () async {
-              const gPay = PaymentSheetGooglePay(
-                merchantCountryCode: 'US',
-                currencyCode: 'US',
-                testEnv: true,
-              );
-              try {
-                await Stripe.instance.initPaymentSheet(
-                  paymentSheetParameters: SetupPaymentSheetParameters(
-                    paymentIntentClientSecret: secret,
-                    style: ThemeMode.dark,
-                    merchantDisplayName: 'sample',
-                  ),
-                );
-                await Stripe.instance.presentPaymentSheet();
-              } catch (e) {
-                // ignore: use_build_context_synchronously
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Error: $e')),
-                );
-                rethrow;
-              }
-            },
-            child: const Text(
-              'Pay',
-              style: TextStyle(fontSize: 40),
+          child: Visibility(
+            visible: token != null,
+            replacement: ElevatedButton(
+              onPressed: getToken,
+              child: const Text('Login', style: TextStyle(fontSize: 40)),
+            ),
+            child: ElevatedButton(
+              onPressed: pay,
+              child: const Text('Pay', style: TextStyle(fontSize: 40)),
             ),
           ),
         ),
